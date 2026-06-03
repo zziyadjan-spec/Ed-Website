@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Imaging Signs — San Diego's Premier Sign Manufacturer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: { DEFAULT: '#080a10', light: '#0d1020', mid: '#111624' },
+            gold: { DEFAULT: '#c07818', bright: '#e09828', light: '#f0b84a', pale: '#fad98c' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:       #080a10;
+      --navy-light: #0d1020;
+      --navy-mid:   #111624;
+      --gold:       #c07818;
+      --gold-bright:#e09828;
+      --gold-light: #f0b84a;
+      --gold-pale:  #fad98c;
+      --text:       #f2ede8;
+      --text-dim:   #7a7068;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--navy);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Grain */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      background-size: 300px 300px;
+    }
+
+    /* ─── HERO ─────────────────────────────── */
+    #hero {
+      position: relative;
+      height: 100vh;
+      width: 100%;
+      overflow: hidden;
+      background: var(--navy);
+    }
+
+    #three-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .hero-vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 50%, transparent 30%, rgba(8,10,16,0.55) 100%),
+        linear-gradient(to bottom, rgba(8,10,16,0.3) 0%, transparent 20%, transparent 70%, rgba(8,10,16,0.9) 100%);
+    }
+
+    /* ─── NAV ──────────────────────────────── */
+    .nav-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 30;
+      padding: 1.75rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      opacity: 0;
+      animation: aFadeIn 1s ease 0.8s forwards;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+    }
+
+    .nav-logo-img {
+      height: 44px;
+      width: auto;
+    }
+
+    .nav-logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--gold-bright);
+      letter-spacing: -0.01em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(242,237,232,0.6);
+      text-decoration: none;
+      transition: color 0.25s ease;
+    }
+
+    .nav-link:hover { color: var(--gold-light); }
+    .nav-link:focus-visible { outline: 1px solid var(--gold); outline-offset: 4px; }
+
+    .nav-cta {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--navy);
+      background: var(--gold-bright);
+      padding: 0.65rem 1.6rem;
+      border-radius: 2px;
+      text-decoration: none;
+      transition: background 0.25s ease, transform 0.2s ease;
+      box-shadow: 0 2px 12px rgba(224,152,40,0.25);
+    }
+
+    .nav-cta:hover  { background: var(--gold-light); transform: translateY(-1px); }
+    .nav-cta:active { transform: translateY(0); }
+    .nav-cta:focus-visible { outline: 2px solid var(--gold-pale); outline-offset: 3px; }
+
+    /* ─── HERO CONTENT ─────────────────────── */
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: 0 1.5rem;
+    }
+
+    .hero-eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--gold-bright);
+      margin-bottom: 1.75rem;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: aFadeUp 0.7s cubic-bezier(0.2, 0.65, 0.3, 0.9) 1.0s forwards;
+    }
+
+    #hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3.25rem, 9vw, 7.5rem);
+      font-weight: 900;
+      line-height: 1.0;
+      letter-spacing: -0.02em;
+      color: #f8f4ee;
+      text-shadow: 0 0 80px rgba(224,152,40,0.2), 0 2px 40px rgba(0,0,0,0.5);
+      margin-bottom: 1.75rem;
+    }
+
+    #hero-title .char {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(64px);
+    }
+
+    .hero-sub {
+      font-size: clamp(0.95rem, 1.8vw, 1.2rem);
+      line-height: 1.75;
+      color: rgba(242,237,232,0.6);
+      max-width: 540px;
+      margin-bottom: 3rem;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: aFadeUp 0.7s cubic-bezier(0.2, 0.65, 0.3, 0.9) 2.4s forwards;
+    }
+
+    .hero-btns {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      opacity: 0;
+      animation: aFadeIn 0.8s ease 3.0s forwards;
+    }
+
+    /* ─── BUTTONS ──────────────────────────── */
+    .btn-primary {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--navy);
+      background: var(--gold-bright);
+      padding: 1rem 2.75rem;
+      border-radius: 2px;
+      text-decoration: none;
+      box-shadow: 0 4px 24px rgba(192,120,24,0.35), 0 1px 4px rgba(0,0,0,0.3);
+      transition: background 0.25s, transform 0.2s, box-shadow 0.25s;
+    }
+
+    .btn-primary:hover  {
+      background: var(--gold-light);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(192,120,24,0.4), 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:focus-visible { outline: 2px solid var(--gold-pale); outline-offset: 3px; }
+
+    .btn-ghost {
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(242,237,232,0.75);
+      padding: 1rem 2rem;
+      border: 1px solid rgba(242,237,232,0.18);
+      border-radius: 2px;
+      text-decoration: none;
+      transition: border-color 0.25s, color 0.25s, transform 0.2s;
+    }
+
+    .btn-ghost:hover  { border-color: var(--gold); color: var(--gold-light); transform: translateY(-2px); }
+    .btn-ghost:active { transform: translateY(0); }
+    .btn-ghost:focus-visible { outline: 1px solid var(--gold); outline-offset: 3px; }
+
+    /* ─── SCROLL INDICATOR ─────────────────── */
+    .scroll-hint {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      opacity: 0;
+      animation: aFadeIn 1s ease 3.8s forwards;
+    }
+
+    .scroll-hint-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .scroll-hint-line {
+      width: 1px;
+      height: 44px;
+      background: linear-gradient(to bottom, var(--gold-bright), transparent);
+      animation: aPulse 2.2s ease-in-out 3.8s infinite;
+    }
+
+    /* ─── MARQUEE ──────────────────────────── */
+    .marquee-wrap {
+      background: var(--navy-mid);
+      border-top:    1px solid rgba(224,152,40,0.12);
+      border-bottom: 1px solid rgba(224,152,40,0.12);
+      padding: 1rem 0;
+      overflow: hidden;
+    }
+
+    .marquee-track {
+      display: flex;
+      width: max-content;
+      animation: aMarquee 32s linear infinite;
+    }
+
+    .marquee-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 1.4rem;
+      margin: 0 0.4rem;
+      border: 1px solid rgba(224,152,40,0.18);
+      border-radius: 9999px;
+      background: rgba(224,152,40,0.04);
+      backdrop-filter: blur(6px);
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(242,237,232,0.5);
+      white-space: nowrap;
+    }
+
+    .marquee-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--gold-bright);
+      flex-shrink: 0;
+    }
+
+    /* ─── SECTIONS ─────────────────────────── */
+    .section { padding: 7rem 0; }
+    .section-dark { background: var(--navy-mid); }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2.5rem;
+    }
+
+    .label {
+      font-size: 0.67rem;
+      letter-spacing: 0.38em;
+      text-transform: uppercase;
+      color: var(--gold-bright);
+      margin-bottom: 1rem;
+    }
+
+    .heading {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 4vw, 3.75rem);
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+    }
+
+    .body-text {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: rgba(242,237,232,0.6);
+    }
+
+    /* ─── SERVICES ─────────────────────────── */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin-top: 3.5rem;
+    }
+
+    .service-card {
+      background: var(--navy-light);
+      border: 1px solid rgba(242,237,232,0.055);
+      border-radius: 3px;
+      padding: 2.25rem 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s, transform 0.35s cubic-bezier(0.2, 0.65, 0.3, 0.9);
+      cursor: default;
+    }
+
+    .service-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .service-card:hover { border-color: rgba(224,152,40,0.22); transform: translateY(-5px); }
+    .service-card:hover::before { opacity: 1; }
+
+    .service-icon {
+      font-size: 1.75rem;
+      color: var(--gold-bright);
+      margin-bottom: 1.35rem;
+      line-height: 1;
+      text-shadow: 0 0 16px rgba(224,152,40,0.5);
+    }
+
+    .service-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+
+    .service-desc {
+      font-size: 0.875rem;
+      line-height: 1.7;
+      color: rgba(242,237,232,0.5);
+    }
+
+    .service-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--gold);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      margin-top: 1.5rem;
+      transition: color 0.2s, gap 0.25s;
+    }
+
+    .service-link:hover  { color: var(--gold-light); gap: 0.65rem; }
+    .service-link:focus-visible { outline: 1px solid var(--gold); outline-offset: 2px; }
+
+    /* ─── STATS ────────────────────────────── */
+    .stats-bar {
+      background: var(--navy-mid);
+      border-top:    1px solid rgba(224,152,40,0.1);
+      border-bottom: 1px solid rgba(224,152,40,0.1);
+      padding: 4.5rem 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2rem;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.75rem, 5vw, 4.25rem);
+      font-weight: 900;
+      color: var(--gold-bright);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-lbl {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(242,237,232,0.42);
+    }
+
+    /* ─── ABOUT ────────────────────────────── */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6rem;
+      align-items: center;
+    }
+
+    .about-img-wrap {
+      position: relative;
+      padding-bottom: 1.5rem;
+      padding-right: 1.5rem;
+    }
+
+    .about-logo-panel {
+      width: 100%;
+      height: 520px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--navy-mid);
+      border: 1px solid rgba(224,152,40,0.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Radial gold glow behind logo */
+    .about-logo-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 50% at 50% 50%, rgba(224,152,40,0.09) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Corner grid lines for depth */
+    .about-logo-panel::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(224,152,40,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(224,152,40,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+
+    .about-logo-panel img {
+      width: 72%;
+      max-width: 340px;
+      height: auto;
+      position: relative;
+      z-index: 1;
+      filter: drop-shadow(0 4px 32px rgba(224,152,40,0.18)) drop-shadow(0 0 64px rgba(192,120,24,0.12));
+    }
+
+    .about-img-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(224,152,40,0.06) 0%, transparent 55%);
+      border-radius: 3px;
+      pointer-events: none;
+    }
+
+    .about-img-corner {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 140px;
+      height: 140px;
+      border: 1px solid rgba(224,152,40,0.25);
+      border-radius: 2px;
+    }
+
+    .about-meta {
+      display: flex;
+      gap: 2.5rem;
+      margin: 2.5rem 0;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(224,152,40,0.12);
+    }
+
+    .about-meta-item {}
+
+    .about-meta-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(242,237,232,0.38);
+      margin-bottom: 0.4rem;
+    }
+
+    .about-meta-val {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .about-meta-val a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .about-meta-val a:hover { color: var(--gold-light); }
+
+    .about-est {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(4rem, 6vw, 6rem);
+      font-weight: 900;
+      color: rgba(224,152,40,0.09);
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 1.25rem;
+      -webkit-text-stroke: 1px rgba(224,152,40,0.15);
+    }
+
+    /* ─── GALLERY ──────────────────────────── */
+    .gallery-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 3rem;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: 220px 220px;
+      gap: 0.875rem;
+    }
+
+    .gallery-cell {
+      position: relative;
+      overflow: hidden;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .gallery-cell-wide { grid-column: span 2; }
+    .gallery-cell-tall { grid-row: span 2; }
+
+    .gallery-cell img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      transition: transform 0.6s cubic-bezier(0.2, 0.65, 0.3, 0.9);
+      background: var(--navy-mid);
+    }
+
+    .gallery-cell:hover img { transform: scale(1.07); }
+
+    .gallery-cell-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(8,10,16,0.75) 0%, transparent 55%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .gallery-cell:hover .gallery-cell-overlay { opacity: 1; }
+
+    .gallery-cell-tag {
+      position: absolute;
+      bottom: 1rem;
+      left: 1.25rem;
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gold-light);
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+
+    .gallery-cell:hover .gallery-cell-tag { opacity: 1; transform: translateY(0); }
+
+    /* ─── REVIEWS ──────────────────────────── */
+    .reviews-rating {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .reviews-stars-big {
+      color: var(--gold-bright);
+      font-size: 1.15rem;
+      letter-spacing: 0.05em;
+    }
+
+    .reviews-score {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .reviews-count {
+      font-size: 0.78rem;
+      color: rgba(242,237,232,0.4);
+      letter-spacing: 0.08em;
+    }
+
+    .reviews-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin-top: 3.5rem;
+    }
+
+    .review-card {
+      background: var(--navy-mid);
+      border: 1px solid rgba(242,237,232,0.055);
+      border-radius: 3px;
+      padding: 1.75rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+
+    .review-card::before {
+      content: '"';
+      position: absolute;
+      top: -0.5rem;
+      right: 1.25rem;
+      font-family: 'Playfair Display', serif;
+      font-size: 6rem;
+      font-weight: 900;
+      color: rgba(224,152,40,0.06);
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .review-card:hover { border-color: rgba(224,152,40,0.2); transform: translateY(-3px); }
+
+    .review-stars {
+      color: var(--gold-bright);
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+
+    .review-quote {
+      font-size: 0.88rem;
+      line-height: 1.78;
+      color: rgba(242,237,232,0.7);
+      font-style: italic;
+      margin-bottom: 1.4rem;
+    }
+
+    .review-author {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .review-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(224,152,40,0.12);
+      border: 1px solid rgba(224,152,40,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--gold-bright);
+      flex-shrink: 0;
+    }
+
+    .review-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .review-platform {
+      font-size: 0.67rem;
+      color: rgba(242,237,232,0.35);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-top: 0.15rem;
+    }
+
+    /* ─── CTA ──────────────────────────────── */
+    .cta-section {
+      position: relative;
+      text-align: center;
+      padding: 9rem 0;
+      overflow: hidden;
+      background: var(--navy-light);
+      border-top: 1px solid rgba(224,152,40,0.1);
+      border-bottom: 1px solid rgba(224,152,40,0.1);
+    }
+
+    .cta-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(ellipse, rgba(224,152,40,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-tagline {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 4.5vw, 4rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      max-width: 600px;
+      margin: 0.75rem auto 1.75rem;
+    }
+
+    .cta-tagline em {
+      font-style: italic;
+      color: var(--gold-light);
+    }
+
+    .cta-sub {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: rgba(242,237,232,0.55);
+      max-width: 480px;
+      margin: 0 auto 3rem;
+    }
+
+    .cta-btns {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ─── FOOTER ───────────────────────────── */
+    footer {
+      background: var(--navy-mid);
+      border-top: 1px solid rgba(242,237,232,0.055);
+      padding: 5rem 0 2.5rem;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2.2fr 1fr 1fr 1fr;
+      gap: 3.5rem;
+      margin-bottom: 3.5rem;
+    }
+
+    .footer-brand-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--gold-bright);
+    }
+
+    .footer-brand-logo {
+      height: 40px;
+      width: auto;
+    }
+
+    .footer-tagline {
+      font-size: 0.88rem;
+      line-height: 1.75;
+      color: rgba(242,237,232,0.42);
+      margin-top: 1rem;
+      max-width: 280px;
+    }
+
+    .footer-col-title {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.4rem;
+    }
+
+    .footer-link {
+      display: block;
+      font-size: 0.875rem;
+      color: rgba(242,237,232,0.5);
+      text-decoration: none;
+      margin-bottom: 0.65rem;
+      transition: color 0.22s;
+    }
+
+    .footer-link:hover { color: var(--gold-light); }
+    .footer-link:focus-visible { outline: 1px solid var(--gold); outline-offset: 2px; }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(242,237,232,0.055);
+      padding-top: 1.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .footer-copy, .footer-credit {
+      font-size: 0.72rem;
+      color: rgba(242,237,232,0.28);
+    }
+
+    .footer-credit a {
+      color: var(--gold);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-credit a:hover { color: var(--gold-light); }
+
+    /* ─── SCROLL REVEAL ────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.85s cubic-bezier(0.2, 0.65, 0.3, 0.9),
+                  transform 0.85s cubic-bezier(0.2, 0.65, 0.3, 0.9);
+    }
+
+    .reveal.stagger-1 { transition-delay: 0.05s; }
+    .reveal.stagger-2 { transition-delay: 0.12s; }
+    .reveal.stagger-3 { transition-delay: 0.19s; }
+    .reveal.stagger-4 { transition-delay: 0.26s; }
+    .reveal.stagger-5 { transition-delay: 0.33s; }
+    .reveal.stagger-6 { transition-delay: 0.40s; }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ─── KEYFRAMES ────────────────────────── */
+    @keyframes aFadeIn  { to { opacity: 1; } }
+    @keyframes aFadeUp  { to { opacity: 1; transform: translateY(0); } }
+    @keyframes aCharReveal {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes aMarquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    @keyframes aPulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+
+    /* ─── RESPONSIVE ───────────────────────── */
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .services-grid { grid-template-columns: repeat(2, 1fr); }
+      .about-grid { grid-template-columns: 1fr; gap: 3rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .reviews-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+      .gallery-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto;
+      }
+      .gallery-cell-wide { grid-column: span 1; }
+    }
+
+    @media (max-width: 600px) {
+      .nav-bar { padding: 1.25rem 1.5rem; }
+      .container { padding: 0 1.5rem; }
+      .services-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .reviews-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .hero-btns { flex-direction: column; align-items: center; }
+      .gallery-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- HERO                                   -->
+  <!-- ══════════════════════════════════════ -->
+  <section id="hero">
+    <div id="three-canvas"></div>
+    <div class="hero-vignette"></div>
+
+    <nav class="nav-bar">
+      <a href="/" class="nav-logo">
+        <img
+          class="nav-logo-img"
+          src="logo-ed.png"
+          alt="3D Imaging Signs"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+        >
+        <span class="nav-logo-text" style="display:none;">3D Imaging Signs</span>
+      </a>
+      <div class="nav-links">
+        <a href="#services" class="nav-link">Services</a>
+        <a href="#about"    class="nav-link">About</a>
+        <a href="#gallery"  class="nav-link">Gallery</a>
+        <a href="#reviews"  class="nav-link">Reviews</a>
+      </div>
+      <a href="tel:6194470059" class="nav-cta">Free Quote</a>
+    </nav>
+
+    <div class="hero-content">
+      <p class="hero-eyebrow">Established 1994 &nbsp;·&nbsp; El Cajon, CA</p>
+      <h1 id="hero-title" aria-label="3D Imaging Signs"></h1>
+      <p class="hero-sub">
+        San Diego's premier manufacturer of custom channel letters and commercial signage.
+        A sign is more than a name — it is your image.
+      </p>
+      <div class="hero-btns">
+        <a href="tel:6194470059"           class="btn-primary">Get a Free Quote</a>
+        <a href="#gallery"                 class="btn-ghost">View Our Work</a>
+      </div>
+    </div>
+
+    <div class="scroll-hint">
+      <span class="scroll-hint-label">Scroll</span>
+      <div class="scroll-hint-line"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- MARQUEE                                -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="marquee-wrap">
+    <div class="marquee-track" id="marqueeTrack"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- SERVICES                               -->
+  <!-- ══════════════════════════════════════ -->
+  <section id="services" class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="label">What We Do</p>
+        <h2 class="heading">Signage Built<br>to Last</h2>
+        <p class="body-text" style="max-width:600px;">From illuminated channel letters to full fleet wraps, every project is crafted with precision using only the highest-quality materials — backed by our 3-year warranty.</p>
+      </div>
+
+      <div class="services-grid">
+        <div class="service-card reveal stagger-1">
+          <div class="service-icon">✦</div>
+          <h3 class="service-name">Channel Letters</h3>
+          <p class="service-desc">San Diego's premier fabricator. Custom-lit channel letters for storefronts, capable of 100+ letter sets per run — on time, on budget, every time.</p>
+          <a href="services.html" class="service-link">Explore &rarr;</a>
+        </div>
+        <div class="service-card reveal stagger-2">
+          <div class="service-icon">◈</div>
+          <h3 class="service-name">Outdoor Signs</h3>
+          <p class="service-desc">Building and storefront signs, digital displays, banners, flags, wraps, and directory signage that commands attention from the street.</p>
+          <a href="services.html" class="service-link">Explore &rarr;</a>
+        </div>
+        <div class="service-card reveal stagger-3">
+          <div class="service-icon">⬡</div>
+          <h3 class="service-name">Vehicle Wraps</h3>
+          <p class="service-desc">Full vehicle wraps, fleet graphics, magnetic signs, boat wraps, and custom decals that turn every vehicle into a moving billboard.</p>
+          <a href="services.html" class="service-link">Explore &rarr;</a>
+        </div>
+        <div class="service-card reveal stagger-4">
+          <div class="service-icon">◇</div>
+          <h3 class="service-name">Electric Signs</h3>
+          <p class="service-desc">LED readerboards, backlit and edgelit panels, interactive displays. High-impact lighting solutions visible day and night.</p>
+          <a href="services.html" class="service-link">Explore &rarr;</a>
+        </div>
+        <div class="service-card reveal stagger-5">
+          <div class="service-icon">▣</div>
+          <h3 class="service-name">Indoor Displays</h3>
+          <p class="service-desc">Custom interior displays, lightbox signs, plaques, office signage, pop-up signs, and backdrops that elevate your brand inside.</p>
+          <a href="services.html" class="service-link">Explore &rarr;</a>
+        </div>
+        <div class="service-card reveal stagger-6">
+          <div class="service-icon">▲</div>
+          <h3 class="service-name">Banners & Flags</h3>
+          <p class="service-desc">Fabric, vinyl, retractable, and decorative banners for events, promotions, and permanent installations. Built for California weather.</p>
+          <a href="services.html" class="service-link">Explore &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- STATS                                  -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="stats-bar">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="reveal stagger-1" style="text-align:center;">
+          <div class="stat-num">30+</div>
+          <div class="stat-lbl">Years in Business</div>
+        </div>
+        <div class="reveal stagger-2" style="text-align:center;">
+          <div class="stat-num">100+</div>
+          <div class="stat-lbl">Letter Sets Per Run</div>
+        </div>
+        <div class="reveal stagger-3" style="text-align:center;">
+          <div class="stat-num">3yr</div>
+          <div class="stat-lbl">Product Warranty</div>
+        </div>
+        <div class="reveal stagger-4" style="text-align:center;">
+          <div class="stat-num">6</div>
+          <div class="stat-lbl">Service Categories</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- ABOUT                                  -->
+  <!-- ══════════════════════════════════════ -->
+  <section id="about" class="section">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-img-wrap reveal">
+          <div class="about-logo-panel">
+            <img src="logo-ed.png" alt="3D Imaging Signs Inc.">
+          </div>
+          <div class="about-img-overlay"></div>
+          <div class="about-img-corner"></div>
+        </div>
+        <div class="reveal stagger-2">
+          <div class="about-est">1994</div>
+          <p class="label">About Us</p>
+          <h2 class="heading">San Diego's Sign<br>Craftsmen</h2>
+          <p class="body-text" style="margin-bottom:1.25rem;">
+            3D Imaging Signs knows that a sign is more than a name — it is your image. For over thirty years, we've worked alongside San Diego businesses to craft memorable signage that sets them apart from the competition.
+          </p>
+          <p class="body-text">
+            Our streamlined manufacturing process delivers consistent quality whether you need a single letter set or 100 sets on the same deadline. We use only the most technically advanced equipment and highest-quality parts, because your brand deserves nothing less.
+          </p>
+          <div class="about-meta">
+            <div class="about-meta-item">
+              <div class="about-meta-label">Location</div>
+              <div class="about-meta-val">
+                <a href="https://maps.google.com/?q=642+Jamacha+Rd+El+Cajon+CA+92019" target="_blank" rel="noopener">
+                  642 Jamacha Rd<br>El Cajon, CA 92019
+                </a>
+              </div>
+            </div>
+            <div class="about-meta-item">
+              <div class="about-meta-label">Phone</div>
+              <div class="about-meta-val">
+                <a href="tel:6194470059">(619) 447-0059</a>
+              </div>
+            </div>
+            <div class="about-meta-item">
+              <div class="about-meta-label">Warranty</div>
+              <div class="about-meta-val">3-Year<br>Product Guarantee</div>
+            </div>
+          </div>
+          <a href="tel:6194470059" class="btn-primary">Get a Free Quote</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- GALLERY PREVIEW                        -->
+  <!-- ══════════════════════════════════════ -->
+  <section id="gallery" class="section section-dark">
+    <div class="container">
+      <div class="gallery-header reveal">
+        <div>
+          <p class="label">Portfolio</p>
+          <h2 class="heading" style="margin-bottom:0;">Recent Work</h2>
+        </div>
+        <a href="gallery.html" class="btn-ghost" style="font-size:0.72rem;">View Full Gallery &rarr;</a>
+      </div>
+
+      <div class="gallery-grid">
+        <div class="gallery-cell gallery-cell-wide reveal stagger-1">
+          <img src="https://3dimagingsigns.com/wp-content/uploads/brizy/imgs/20160417_161820-scaled-750x422x0x32x750x359x1601417153.jpg" alt="Aqua-Tots Swim Schools — channel letters">
+          <div class="gallery-cell-overlay"></div>
+          <div class="gallery-cell-tag">Channel Letters</div>
+        </div>
+        <div class="gallery-cell gallery-cell-tall reveal stagger-2">
+          <img src="https://3dimagingsigns.com/wp-content/uploads/brizy/imgs/20161028_164026-524x698x62x62x380x324x1601415145.jpg" alt="Stanton Optical — outdoor channel letters">
+          <div class="gallery-cell-overlay"></div>
+          <div class="gallery-cell-tag">Outdoor Signs</div>
+        </div>
+        <div class="gallery-cell reveal stagger-3">
+          <img src="https://3dimagingsigns.com/wp-content/uploads/brizy/imgs/20180821_193340-scaled-869x422x61x8x731x330x1601418218.jpg" alt="Laundromat — illuminated channel letters">
+          <div class="gallery-cell-overlay"></div>
+          <div class="gallery-cell-tag">Electric Signs</div>
+        </div>
+        <div class="gallery-cell reveal stagger-4">
+          <img src="https://3dimagingsigns.com/wp-content/uploads/brizy/imgs/20170313_174014-825x619x38x148x750x360x1601418397.jpg" alt="Dent and Scratch Pro — storefront signage">
+          <div class="gallery-cell-overlay"></div>
+          <div class="gallery-cell-tag">Storefront Signs</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- REVIEWS                                -->
+  <!-- ══════════════════════════════════════ -->
+  <section id="reviews" class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="label">Client Reviews</p>
+        <h2 class="heading">What Our<br>Clients Say</h2>
+        <div class="reviews-rating">
+          <span class="reviews-stars-big">★★★★★</span>
+          <span class="reviews-score">5.0</span>
+          <span class="reviews-count">· Google Reviews</span>
+        </div>
+      </div>
+
+      <div class="reviews-grid">
+
+        <div class="review-card reveal stagger-1">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"We had our channel letters done by Ed and his team — absolutely beautiful work. The quality is outstanding and they finished ahead of schedule. Will definitely come back for our second location."</p>
+          <div class="review-author">
+            <div class="review-avatar">MS</div>
+            <div>
+              <div class="review-name">Maria S.</div>
+              <div class="review-platform">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                Google Review
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-card reveal stagger-2">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"3D Imaging Signs has been making our signs for over 15 years. Ed is a true craftsman who takes immense pride in his work. The vehicle wrap they did for our fleet was absolutely stunning."</p>
+          <div class="review-author">
+            <div class="review-avatar">RK</div>
+            <div>
+              <div class="review-name">Robert K.</div>
+              <div class="review-platform">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                Google Review
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-card reveal stagger-3">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Professional, on time, and the sign looks incredible. We get compliments from customers every day about our storefront. Highly recommend to any business owner in the San Diego area."</p>
+          <div class="review-author">
+            <div class="review-avatar">JL</div>
+            <div>
+              <div class="review-name">Jennifer L.</div>
+              <div class="review-platform">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                Google Review
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-card reveal stagger-4">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Came to 3D Imaging Signs after two other shops couldn't handle our custom request. Ed figured it out in one consultation and delivered exactly what we envisioned. Exceptional craftsmanship."</p>
+          <div class="review-author">
+            <div class="review-avatar">CM</div>
+            <div>
+              <div class="review-name">Carlos M.</div>
+              <div class="review-platform">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                Google Review
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-card reveal stagger-5">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"Best sign shop in San Diego, period. We've been coming here since 1999. The 3-year warranty is real — they stand behind their work without any hassle whatsoever. Wouldn't go anywhere else."</p>
+          <div class="review-author">
+            <div class="review-avatar">DT</div>
+            <div>
+              <div class="review-name">David T.</div>
+              <div class="review-platform">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                Google Review
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-card reveal stagger-6">
+          <div class="review-stars">★★★★★</div>
+          <p class="review-quote">"From initial quote to final installation, the experience was seamless. Ed and his crew are true professionals. Our outdoor sign has held up perfectly through coastal weather — three years strong."</p>
+          <div class="review-author">
+            <div class="review-avatar">AP</div>
+            <div>
+              <div class="review-name">Amanda P.</div>
+              <div class="review-platform">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                Google Review
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- CTA                                    -->
+  <!-- ══════════════════════════════════════ -->
+  <section class="cta-section section-dark">
+    <div class="cta-glow"></div>
+    <div class="container reveal" style="position:relative;z-index:1;">
+      <p class="label" style="text-align:center;">Ready to Stand Out?</p>
+      <h2 class="cta-tagline">Let's Build Something<br><em>Unforgettable</em></h2>
+      <p class="cta-sub">Whether it's a single storefront sign or a full fleet wrap, we bring the same precision and craftsmanship to every project. Get your free quote today.</p>
+      <div class="cta-btns">
+        <a href="tel:6194470059"                  class="btn-primary">Call (619) 447-0059</a>
+        <a href="mailto:info@3dimagingsigns.com"  class="btn-ghost">Send an Email</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- FOOTER                                 -->
+  <!-- ══════════════════════════════════════ -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <img
+            class="footer-brand-logo"
+            src="logo-ed.png"
+            alt="3D Imaging Signs"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+          >
+          <span class="footer-brand-text" style="display:none;">3D Imaging Signs</span>
+          <p class="footer-tagline">San Diego's premier manufacturer of channel letters and custom signage. Serving businesses since 1994 with quality, precision, and a 3-year warranty.</p>
+        </div>
+        <div>
+          <p class="footer-col-title">Services</p>
+          <a href="services.html" class="footer-link">Channel Letters</a>
+          <a href="services.html" class="footer-link">Outdoor Signs</a>
+          <a href="services.html" class="footer-link">Vehicle Wraps</a>
+          <a href="services.html" class="footer-link">Electric Signs</a>
+          <a href="services.html" class="footer-link">Indoor Displays</a>
+          <a href="services.html" class="footer-link">Banners &amp; Flags</a>
+        </div>
+        <div>
+          <p class="footer-col-title">Company</p>
+          <a href="#about"        class="footer-link">About Us</a>
+          <a href="gallery.html"  class="footer-link">Gallery</a>
+          <a href="services.html" class="footer-link">Services</a>
+          <a href="contact.html"  class="footer-link">Contact</a>
+        </div>
+        <div>
+          <p class="footer-col-title">Contact</p>
+          <a href="tel:6194470059" class="footer-link">(619) 447-0059</a>
+          <a
+            href="https://maps.google.com/?q=642+Jamacha+Rd+El+Cajon+CA+92019"
+            class="footer-link"
+            target="_blank"
+            rel="noopener"
+          >642 Jamacha Rd<br>El Cajon, CA 92019</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">&copy; 2025 3D Imaging Signs, Inc. All rights reserved.</p>
+        <p class="footer-credit">Designed by <a href="https://draykoai.com" target="_blank" rel="noopener">Drayko AI</a></p>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- SCRIPTS                                -->
+  <!-- ══════════════════════════════════════ -->
+  <script>
+  // ──────────────────────────────────────────
+  // THREE.JS — WOVEN PARTICLE TORUS KNOT HERO
+  // (converted from the provided React component)
+  // ──────────────────────────────────────────
+  (function () {
+    const container = document.getElementById('three-canvas');
+
+    const scene    = new THREE.Scene();
+    const camera   = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    const mouse = new THREE.Vector2(0, 0);
+    const clock  = new THREE.Clock();
+
+    // ── Particle geometry ──────────────────
+    const PARTICLE_COUNT = 50000;
+    const positions         = new Float32Array(PARTICLE_COUNT * 3);
+    const originalPositions = new Float32Array(PARTICLE_COUNT * 3);
+    const colors            = new Float32Array(PARTICLE_COUNT * 3);
+    const velocities        = new Float32Array(PARTICLE_COUNT * 3);
+
+    const geo      = new THREE.BufferGeometry();
+    const knotGeo  = new THREE.TorusKnotGeometry(1.5, 0.5, 200, 32);
+    const knotPos  = knotGeo.attributes.position;
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const vi = i % knotPos.count;
+      const x  = knotPos.getX(vi);
+      const y  = knotPos.getY(vi);
+      const z  = knotPos.getZ(vi);
+
+      positions[i*3]   = originalPositions[i*3]   = x;
+      positions[i*3+1] = originalPositions[i*3+1] = y;
+      positions[i*3+2] = originalPositions[i*3+2] = z;
+
+      // Brand-matched amber/copper palette
+      const c = new THREE.Color();
+      c.setHSL(
+        0.07 + Math.random() * 0.09,   // hue: orange → amber
+        0.65 + Math.random() * 0.35,   // saturation
+        0.35 + Math.random() * 0.45    // lightness
+      );
+      colors[i*3]   = c.r;
+      colors[i*3+1] = c.g;
+      colors[i*3+2] = c.b;
+    }
+
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+
+    const mat = new THREE.PointsMaterial({
+      size: 0.02,
+      vertexColors: true,
+      blending:     THREE.AdditiveBlending,
+      transparent:  true,
+      opacity:      0.9,
+      depthWrite:   false,
+    });
+
+    const points = new THREE.Points(geo, mat);
+    scene.add(points);
+
+    // ── Mouse ──────────────────────────────
+    window.addEventListener('mousemove', (e) => {
+      mouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    // ── Animate ────────────────────────────
+    function tick() {
+      requestAnimationFrame(tick);
+      const t = clock.getElapsedTime();
+
+      const mwx = mouse.x * 3;
+      const mwy = mouse.y * 3;
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const ix = i * 3, iy = ix + 1, iz = ix + 2;
+
+        const cx = positions[ix], cy = positions[iy], cz = positions[iz];
+        const dx = cx - mwx,      dy = cy - mwy,      dz = cz;
+        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+        if (dist < 1.5) {
+          const force    = (1.5 - dist) * 0.01;
+          const invDist  = 1 / (dist + 1e-5);
+          velocities[ix] += dx * invDist * force;
+          velocities[iy] += dy * invDist * force;
+          velocities[iz] += dz * invDist * force;
+        }
+
+        // Spring return
+        velocities[ix] += (originalPositions[ix] - cx) * 0.001;
+        velocities[iy] += (originalPositions[iy] - cy) * 0.001;
+        velocities[iz] += (originalPositions[iz] - cz) * 0.001;
+
+        // Damping
+        velocities[ix] *= 0.95;
+        velocities[iy] *= 0.95;
+        velocities[iz] *= 0.95;
+
+        positions[ix] += velocities[ix];
+        positions[iy] += velocities[iy];
+        positions[iz] += velocities[iz];
+      }
+
+      geo.attributes.position.needsUpdate = true;
+      points.rotation.y = t * 0.05;
+      renderer.render(scene, camera);
+    }
+    tick();
+
+    // ── Resize ─────────────────────────────
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  })();
+
+
+  // ──────────────────────────────────────────
+  // HERO TITLE — CHARACTER-BY-CHARACTER REVEAL
+  // ──────────────────────────────────────────
+  (function () {
+    const el       = document.getElementById('hero-title');
+    const headline = '3D Imaging Signs';
+    let   delay    = 1.2; // seconds
+
+    headline.split(' ').forEach((word, wi) => {
+      const wordEl = document.createElement('span');
+      wordEl.style.cssText = 'display:inline-block; margin-right:0.32em;';
+
+      word.split('').forEach((ch) => {
+        const span = document.createElement('span');
+        span.textContent = ch;
+        span.className   = 'char';
+        span.style.animationName           = 'aCharReveal';
+        span.style.animationDuration       = '0.75s';
+        span.style.animationTimingFunction = 'cubic-bezier(0.2, 0.65, 0.3, 0.9)';
+        span.style.animationFillMode       = 'forwards';
+        span.style.animationDelay          = delay + 's';
+        delay += 0.045;
+        wordEl.appendChild(span);
+      });
+
+      el.appendChild(wordEl);
+    });
+  })();
+
+
+  // ──────────────────────────────────────────
+  // MARQUEE CHIPS
+  // ──────────────────────────────────────────
+  (function () {
+    const items = [
+      'Channel Letters', 'Outdoor Signs', 'Vehicle Wraps',
+      'Electric Signs',  'Indoor Displays', 'Banners & Flags',
+      'Fleet Graphics',  'Storefront Signs',
+    ];
+    const track = document.getElementById('marqueeTrack');
+    const html  = [...items, ...items].map(s =>
+      `<div class="marquee-chip"><span class="marquee-dot"></span>${s}</div>`
+    ).join('');
+    track.innerHTML = html;
+  })();
+
+
+  // ──────────────────────────────────────────
+  // SCROLL REVEAL
+  // ──────────────────────────────────────────
+  (function () {
+    const els = document.querySelectorAll('.reveal');
+
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+        });
+      }, { threshold: 0.06, rootMargin: '0px 0px -20px 0px' });
+      els.forEach(el => io.observe(el));
+    }
+
+    // Belt-and-suspenders: always reveal everything after 1.5s
+    // (covers headless screenshot tools and slow IO environments)
+    setTimeout(() => els.forEach(el => el.classList.add('visible')), 1500);
+  })();
+  </script>
+</body>
+</html>
