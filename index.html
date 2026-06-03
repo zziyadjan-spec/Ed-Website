@@ -291,10 +291,15 @@
     /* ─── MARQUEE ──────────────────────────── */
     .marquee-wrap {
       background: var(--navy-mid);
-      border-top:    1px solid rgba(224,152,40,0.12);
-      border-bottom: 1px solid rgba(224,152,40,0.12);
-      padding: 1rem 0;
+      border-top:    1px solid rgba(224,152,40,0.22);
+      border-bottom: 1px solid rgba(224,152,40,0.22);
+      padding: 1.1rem 0;
       overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(224,152,40,0.08),
+        inset 0 -1px 0 rgba(224,152,40,0.08),
+        0 0 40px rgba(224,152,40,0.05);
     }
 
     .marquee-track {
@@ -306,26 +311,37 @@
     .marquee-chip {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 1.4rem;
-      margin: 0 0.4rem;
-      border: 1px solid rgba(224,152,40,0.18);
+      gap: 0.55rem;
+      padding: 0.4rem 1.5rem;
+      margin: 0 0.45rem;
+      border: 1px solid rgba(224,152,40,0.28);
       border-radius: 9999px;
-      background: rgba(224,152,40,0.04);
-      backdrop-filter: blur(6px);
-      font-size: 0.7rem;
-      letter-spacing: 0.18em;
+      background: rgba(224,152,40,0.05);
+      backdrop-filter: blur(8px);
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
-      color: rgba(242,237,232,0.5);
+      color: rgba(242,237,232,0.72);
       white-space: nowrap;
+      text-shadow: 0 0 10px rgba(224,152,40,0.45);
+      box-shadow:
+        0 0 10px rgba(224,152,40,0.08),
+        inset 0 0 16px rgba(224,152,40,0.04);
     }
 
     .marquee-dot {
-      width: 4px;
-      height: 4px;
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
       background: var(--gold-bright);
       flex-shrink: 0;
+      box-shadow: 0 0 6px 2px rgba(224,152,40,0.9), 0 0 14px 4px rgba(224,152,40,0.45);
+      animation: aDotPulse 2.8s ease-in-out infinite;
+    }
+
+    @keyframes aDotPulse {
+      0%, 100% { box-shadow: 0 0 6px 2px rgba(224,152,40,0.9),  0 0 14px 4px rgba(224,152,40,0.45); }
+      50%       { box-shadow: 0 0 10px 4px rgba(250,180,60,1),   0 0 22px 8px rgba(224,152,40,0.65); }
     }
 
     /* ─── SECTIONS ─────────────────────────── */
@@ -600,13 +616,34 @@
 
     .about-est {
       font-family: 'DM Sans', sans-serif;
-      font-size: clamp(4rem, 6vw, 6rem);
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
       font-weight: 900;
-      color: rgba(224,152,40,0.09);
-      letter-spacing: -0.03em;
+      color: var(--gold-bright);
+      letter-spacing: 0.04em;
       line-height: 1;
       margin-bottom: 1.25rem;
-      -webkit-text-stroke: 1px rgba(224,152,40,0.15);
+      text-shadow:
+        0 0 12px rgba(224,152,40,1),
+        0 0 28px rgba(224,152,40,0.85),
+        0 0 56px rgba(224,152,40,0.55),
+        0 0 100px rgba(224,152,40,0.3);
+      animation: aEstGlow 3s ease-in-out infinite;
+    }
+    @keyframes aEstGlow {
+      0%, 100% {
+        text-shadow:
+          0 0 12px rgba(224,152,40,1),
+          0 0 28px rgba(224,152,40,0.85),
+          0 0 56px rgba(224,152,40,0.55),
+          0 0 100px rgba(224,152,40,0.3);
+      }
+      50% {
+        text-shadow:
+          0 0 18px rgba(250,180,60,1),
+          0 0 40px rgba(224,152,40,1),
+          0 0 80px rgba(224,152,40,0.7),
+          0 0 140px rgba(224,152,40,0.4);
+      }
     }
 
     /* ─── GALLERY ──────────────────────────── */
@@ -1309,10 +1346,9 @@
             <img src="logo-ed.png" alt="3D Imaging Signs Inc.">
           </div>
           <div class="about-img-overlay"></div>
-          <div class="about-img-corner"></div>
         </div>
         <div class="reveal stagger-2">
-          <div class="about-est">1994</div>
+          <div class="about-est">Since 1994</div>
           <p class="label">About Us</p>
           <h2 class="heading">San Diego's Sign<br>Craftsmen</h2>
           <p class="body-text" style="margin-bottom:1.25rem;">
@@ -1914,7 +1950,7 @@
   // ──────────────────────────────────────────
   (function () {
     const items = [
-      'Channel Letters', 'Outdoor Signs', 'Vehicle Wraps',
+      'Channel Letters', 'Outdoor Signs',
       'Electric Signs',  'Indoor Displays', 'Banners & Flags',
       'Fleet Graphics',  'Storefront Signs',
     ];
